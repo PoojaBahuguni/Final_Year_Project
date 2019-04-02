@@ -4,7 +4,8 @@ from sklearn.metrics.pairwise import cosine_similarity
 import networkx as nx
 import preprocess
 import ssl
-
+from rake_nltk import Rake
+from nltk import pos_tag
 
 def summarize(article):
     try:
@@ -14,6 +15,7 @@ def summarize(article):
     else:
         ssl._create_default_https_context = _create_unverified_https_context
 
+    nltk.download('averaged_perceptron_tagger')
     sentences = preprocess.tokenize_sentences(article)
     clean_sentences = pdpip3.Series(sentences).str.replace("[^a-zA-Z]", " ")
     clean_sentences = [s.lower() for s in clean_sentences]
@@ -47,8 +49,29 @@ def summarize(article):
 
     ranked_sentences = sorted(((scores[i],s) for i,s in enumerate(sentences)), reverse=True)
 
-    for i in range(5):
+    r = Rake()
+
+    for i in range(len(ranked_sentences)):
+        tokens = []
         print(ranked_sentences[i][1])
+        r.extract_keywords_from_text(ranked_sentences[i][1])
+        print("*********************")
+        print(r.get_ranked_phrases()) # To get keyword phrases ranked highest to lowest.
+        tokens.extend(r.get_ranked_phrases())
+        lis = []
+        for i in range(len(tokens)):
+            print("Token is: ", tokens[i])
+            if len(tokens[i].split()) > 1:
+                lis.extend(nltk.word_tokenize(tokens[i]))
+
+            else:
+                lis.append(tokens[i])
+
+
+    print("Tokens after")
+    print(lis)
+
+    print("Parts of speech tagging: ", pos_tag(lis))
 
     return ranked_sentences
 
